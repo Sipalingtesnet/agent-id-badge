@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent ID Badge</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0B0B12;
+            color: #FFFFFF;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            background-color: #12121A;
+            border: 2px solid #D4AF37;
+            border-radius: 16px;
+            max-width: 560px;
+            width: 100%;
+            padding: 40px 32px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #D4AF37;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: #AAAAAA;
+            margin-bottom: 32px;
+            line-height: 1.5;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1A1A24;
+            border: 1px solid #2A2A3A;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            color: #CCCCCC;
+        }
+
+        .status-row span {
+            color: #D4AF37;
+            font-weight: 600;
+        }
+
+        button {
+            background-color: #D4AF37;
+            color: #0B0B12;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, opacity 0.2s;
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 0.5px;
+            width: 100%;
+            max-width: 280px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #E5C74A;
+        }
+
+        button:disabled {
+            background-color: #555555;
+            color: #AAAAAA;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        #status {
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: #AAAAAA;
+            min-height: 20px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        #agentCheck {
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: #CCCCCC;
+            min-height: 20px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        #mintArea {
+            margin-top: 20px;
+        }
+
+        #ownedArea {
+            margin-top: 20px;
+        }
+
+        #ownedText {
+            font-size: 0.95rem;
+            color: #D4AF37;
+            margin-bottom: 16px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        #badgeImg {
+            max-width: 320px;
+            width: 100%;
+            border-radius: 12px;
+            border: 2px solid #D4AF37;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        #txArea {
+            margin-top: 16px;
+            font-size: 0.85rem;
+            color: #AAAAAA;
+            word-break: break-all;
+}
+        #txArea a { color: #D4AF37; }
+        .footer { margin-top: 32px; font-size: 0.8rem; color: #888888; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>AGENT ID BADGE</h1>
+        <p class="subtitle">A free commemorative badge for holders of an Agent ID. One per wallet. You only pay network gas.</p>
+        <div class="status-row"><span>Minted: <span id="supply">…</span> / 1000</span><span>Network: <span id="network">…</span></span></div>
+        <button id="connectBtn">Connect Wallet</button>
+        <div id="status"></div>
+        <div id="agentCheck"></div>
+        <div id="mintArea" style="display:none"><button id="mintBtn">Mint my free badge</button></div>
+        <div id="ownedArea" style="display:none"><p id="ownedText"></p><img id="badgeImg" alt="Your Agent ID Badge"></div>
+        <div id="txArea"></div>
+        <p class="footer">Built for the Agent ID Hackathon. This site collects no funds and makes no promise of value, returns, or profit. Minting is free — you only pay network gas.</p>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script>
+// CONFIG
+const CHAIN_ID = 97;
+const CHAIN_NAME = "BSC Testnet";
+const RPC_URL = "https://data-seed-prebsc-1-s1.bnbchain.org:8545";
+const BADGE_ADDRESS = "0xBB4Dd413289Bc63D6EF56b0160Fb59A3557aa613";
+const AGENT_ID_ADDRESS = "0x90940dA3Bfcb4b5474C2Df738416c919b93dfee5"; // TESTNET stand-in mock Agent ID contract. Mainnet uses the real Agent ID contract 0x60b9262456de011f7d15a54cdd8c48baaa8b022f.
+const EXPLORER = "https://testnet.bscscan.com";
+const DEPLOY_BLOCK = 143684500;
+const TRANSFER_TOPIC = ethers.utils.id("Transfer(address,address,uint256)");
+
+const BADGE_ABI = [
+  "function mint()",
+  "function hasMinted(address) view returns (bool)",
+  "function nextTokenId() view returns (uint256)",
+  "function tokenURI(uint256) view returns (string)",
+  "function balanceOf(address) view returns (uint256)",
+  "function name() view returns (string)"
+];
+const AGENT_ABI = [
+  "function balanceOf(address) view returns (uint256)"
+];
+
+const readProvider = new ethers.providers.JsonRpcProvider(RPC_URL);
+const badgeRead = new ethers.Contract(BADGE_ADDRESS, BADGE_ABI, readProvider);
+const agentRead = new ethers.Contract(AGENT_ID_ADDRESS, AGENT_ABI, readProvider);
+
+let signer = null;
+let currentAccount = null;
+
+function setStatus(msg) {
+  const statusEl = document.getElementById("status");
+  if (statusEl) statusEl.textContent = msg;
+}
+
+async function refreshSupply() {
+  try {
+    const nextTokenId = await badgeRead.nextTokenId();
+    const supplyEl = document.getElementById("supply");
+    if (supplyEl) {
+      supplyEl.textContent = nextTokenId.sub(1).toString();
+    }
+  } catch (err) {
+    console.error("Error refreshing supply:", err);
+  }
+}
+
+async function checkHolder(account) {
+  try {
+    currentAccount = account;
+    const agentCheckEl = document.getElementById("agentCheck");
+    if (agentCheckEl) agentCheckEl.textContent = "Checking Agent ID…";
+    
+    const bal = await agentRead.balanceOf(account);
+    if (bal.eq(0)) {
+      if (agentCheckEl) agentCheckEl.textContent = "This wallet doesn't hold an Agent ID. Only Agent ID holders can mint.";
+      return;
+    }
+    
+    if (agentCheckEl) agentCheckEl.textContent = "Agent ID verified ✓ — this wallet holds an Agent ID.";
+    
+    const minted = await badgeRead.hasMinted(account);
+    if (minted) {
+      await showOwned(account);
+    } else {
+      const mintArea = document.getElementById("mintArea");
+      if (mintArea) mintArea.style.display = "block";
+    }
+  } catch (err) {
+    console.error(err);
+    setStatus("Error checking holder status: " + (err.reason || err.message));
+  }
+}
+
+async function showOwned(account) {
+  try {
+    const logs = await readProvider.getLogs({
+      address: BADGE_ADDRESS,
+      topics: [TRANSFER_TOPIC, null, ethers.utils.hexZeroPad(account, 32)],
+      fromBlock: DEPLOY_BLOCK,
+      toBlock: "latest"
+    });
+    
+    if (logs.length === 0) return;
+    
+    const lastLog = logs[logs.length - 1];
+    const tokenId = parseInt(lastLog.topics[3], 16);
+    
+    const uri = await badgeRead.tokenURI(tokenId);
+    const json = JSON.parse(atob(uri.split(",")[1]));
+    
+    const ownedText = document.getElementById("ownedText");
+    const badgeImg = document.getElementById("badgeImg");
+    const ownedArea = document.getElementById("ownedArea");
+    const mintArea = document.getElementById("mintArea");
+    
+    if (ownedText) ownedText.textContent = "You own Agent ID Badge #" + tokenId;
+    if (badgeImg) badgeImg.src = json.image;
+    if (ownedArea) ownedArea.style.display = "block";
+    if (mintArea) mintArea.style.display = "none";
+  } catch (err) {
+    console.error(err);
+    setStatus("Error loading owned badge: " + (err.reason || err.message));
+  }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  const networkEl = document.getElementById("network");
+  if (networkEl) networkEl.textContent = CHAIN_NAME;
+  
+  refreshSupply();
+
+  if (window.ethereum) {
+    window.ethereum.on("accountsChanged", (accounts) => {
+      window.location.reload();
+    });
+  }
+
+  const connectBtn = document.getElementById("connectBtn");
+  if (connectBtn) {
+    connectBtn.addEventListener("click", async () => {
+      try {
+        if (!window.ethereum) {
+          setStatus("No wallet detected. Install a browser wallet such as MetaMask and refresh.");
+          return;
+        }
+        
+        const web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+        await web3Provider.send("eth_requestAccounts", []);
+        signer = web3Provider.getSigner();
+        const account = await signer.getAddress();
+        
+        const net = await web3Provider.getNetwork();
+        if (net.chainId !== CHAIN_ID) {
+          try {
+            await window.ethereum.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: "0x61" }]
+            });
+          } catch (e) {
+            if (e.code === 4902) {
+              await window.ethereum.request({
+                method: "wallet_addEthereumChain",
+                params: [{
+                  chainId: "0x61",
+                  chainName: "BSC Testnet",
+                  nativeCurrency: { name: "tBNB", symbol: "tBNB", decimals: 18 },
+                  rpcUrls: [RPC_URL],
+                  blockExplorerUrls: [EXPLORER]
+                }]
+              });
+            } else {
+              setStatus("Please switch your wallet to BSC Testnet.");
+              return;
+            }
+          }
+        }
+        
+        connectBtn.textContent = account.substring(0, 6) + "..." + account.substring(account.length - 4);
+        connectBtn.disabled = true;
+        
+        await checkHolder(account);
+      } catch (err) {
+        console.error(err);
+        setStatus("Connection error: " + (err.reason || err.message));
+      }
+    });
+  }
+
+  const mintBtn = document.getElementById("mintBtn");
+  if (mintBtn) {
+    mintBtn.addEventListener("click", async () => {
+      try {
+        if (!signer) {
+          setStatus("Please connect your wallet first.");
+          return;
+        }
+        
+        mintBtn.disabled = true;
+        setStatus("Waiting for wallet confirmation…");
+        
+        const badgeSigner = new ethers.Contract(BADGE_ADDRESS, BADGE_ABI, signer);
+        const tx = await badgeSigner.mint();
+        
+        setStatus("Mint submitted…");
+        const txArea = document.getElementById("txArea");
+        if (txArea) {
+          txArea.innerHTML = `<a href="${EXPLORER}/tx/${tx.hash}" target="_blank">View Transaction on BscScan</a>`;
+        }
+        
+        await tx.wait();
+        setStatus("Minted!");
+        
+        await refreshSupply();
+        if (currentAccount) {
+          await showOwned(currentAccount);
+        }
+      } catch (err) {
+        console.error(err);
+        setStatus("Mint failed: " + (err.reason || err.message));
+        mintBtn.disabled = false;
+      }
+    });
+  }
+});
+</script>
+</body>
+</html>
