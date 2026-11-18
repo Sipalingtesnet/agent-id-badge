@@ -1,0 +1,17 @@
+Write PART 2 of the same Solidity contract (AgentIDBadge). Output ONLY the Solidity functions, no explanations, no markdown fences, no contract wrapper — just the functions, which will be inserted inside the contract before its final closing brace.
+
+Context: the contract already has (from part 1): ERC721 + Ownable, MAX_SUPPLY = 1000, agentIdContract (immutable), nextTokenId (starts at 1), hasMinted mapping, paused flag, BadgeMinted event, errors NotAgentIDHolder/AlreadyMinted/MaxSupplyReached/MintPaused/NonexistentToken/ZeroAddress, constructor, mint(), pause(), unpause(). Imports include Base64 and Strings from OpenZeppelin. Use Strings.toHexString and Base64.encode.
+
+Write these three functions:
+
+1. function tokenURI(uint256 tokenId) public view override returns (string memory):
+   - Revert NonexistentToken(tokenId) if _ownerOf(tokenId) == address(0).
+   - Build a data:application/json;base64,... URI. The JSON has: "name": "Agent ID Badge #<tokenId>", "description": "A free commemorative badge for holders of an Agent ID. Minted free (gas only). This badge makes no promise of value, returns, or profit.", "image": "data:image/svg+xml;base64,<base64 of the SVG>", "attributes": [{"trait_type":"Holder","value":"<full checksummed address of owner>"},{"trait_type":"Token Number","value":"<tokenId as number>"},{"trait_type":"Agent ID Verified","value":"Yes"},{"trait_type":"Mint Price","value":"Free (gas only)"}].
+   - Get the owner with ownerOf(tokenId). Build the JSON with abi.encodePacked and Base64.encode(bytes(json)).
+
+2. function _buildSVG(uint256 tokenId, address holder) internal pure returns (string memory):
+   - Returns a 512x512 SVG string. Design: dark background #0B0B12, gold (#D4AF37) double border, centered text: "AGENT ID" in large gold bold letters, "BADGE" below it, then the holder's shortened address, then "TOKEN #<tokenId>", then small text "FREE MINT - 1 PER WALLET" at the bottom. Use font-family="monospace, sans-serif". Keep the SVG valid and simple: <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"> with a <rect> background, border rects, and <text> elements with text-anchor="middle".
+   - Use the _shortAddress(holder) helper for the address line.
+
+3. function _shortAddress(address holder) internal pure returns (string memory):
+   - Returns the checksummed hex address shortened to first 6 chars + "..." + last 4 chars, e.g. "0xC98f...d4c1". Implement with Strings.toHexString(holder) (42 chars), then slice via bytes: first 6 bytes of the string, "...", last 4 bytes. Use abi.encodePacked to assemble.

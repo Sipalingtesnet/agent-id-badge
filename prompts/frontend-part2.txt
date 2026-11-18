@@ -1,0 +1,25 @@
+Write the main application <script> for the Agent ID Badge mint site. Output ONLY JavaScript code, no explanations, no markdown fences. Start with <script> and end with </script>.
+
+Context: the page already has elements with ids: supply, network, connectBtn, status, agentCheck, mintArea, mintBtn, ownedArea, ownedText, badgeImg, txArea. Ethers v5 UMD is loaded (global `ethers`). This is the BSC TESTNET deployment. No QR/pairing login — injected window.ethereum only.
+
+Config (put at the top, clearly commented):
+- const CHAIN_ID = 97; const CHAIN_NAME = "BSC Testnet";
+- const RPC_URL = "https://data-seed-prebsc-1-s1.bnbchain.org:8545";
+- const BADGE_ADDRESS = "0xBB4Dd413289Bc63D6EF56b0160Fb59A3557aa613";
+- const AGENT_ID_ADDRESS = "0x90940dA3Bfcb4b5474C2Df738416c919b93dfee5"; // TESTNET stand-in mock Agent ID contract. Mainnet uses the real Agent ID contract 0x60b9262456de011f7d15a54cdd8c48baaa8b022f.
+- const EXPLORER = "https://testnet.bscscan.com";
+- const DEPLOY_BLOCK = 143684500;
+- const TRANSFER_TOPIC = ethers.utils.id("Transfer(address,address,uint256)");
+
+Minimal ABIs (as JS arrays):
+- BADGE_ABI = ["function mint()","function hasMinted(address) view returns (bool)","function nextTokenId() view returns (uint256)","function tokenURI(uint256) view returns (string)","function balanceOf(address) view returns (uint256)","function name() view returns (string)"]
+- AGENT_ABI = ["function balanceOf(address) view returns (uint256)"]
+
+Logic (use async/await, wrap in try/catch with friendly messages in #status):
+1. Read-only provider: const readProvider = new ethers.providers.JsonRpcProvider(RPC_URL); const badgeRead = new ethers.Contract(BADGE_ADDRESS, BADGE_ABI, readProvider); const agentRead = new ethers.Contract(AGENT_ID_ADDRESS, AGENT_ABI, readProvider);
+2. On load: set #network text to CHAIN_NAME; call refreshSupply() which reads badgeRead.nextTokenId() and sets #supply to (nextTokenId - 1).
+3. connectBtn click: if (!window.ethereum) { status "No wallet detected. Install Binance Wallet or MetaMask and refresh."; return; } const web3Provider = new ethers.providers.Web3Provider(window.ethereum); await web3Provider.send("eth_requestAccounts", []); const signer = web3Provider.getSigner(); const account = await signer.getAddress(); check chain: const net = await web3Provider.getNetwork(); if (net.chainId !== CHAIN_ID) { try { await window.ethereum.request({method:"wallet_switchEthereumChain", params:[{chainId:"0x61"}]}); } catch (e) { if (e.code === 4902) { await window.ethereum.request({method:"wallet_addEthereumChain", params:[{chainId:"0x61", chainName:"BSC Testnet", nativeCurrency:{name:"tBNB", symbol:"tBNB", decimals:18}, rpcUrls:[RPC_URL], blockExplorerUrls:[EXPLORER]}]}); } else { status "Please switch your wallet to BSC Testnet."; return; } } } then: connectBtn text becomes short address (first 6 + "..." + last 4), connectBtn disabled; call checkHolder(account).
+4. checkHolder(account): agentCheck text "Checking Agent ID…"; const bal = await agentRead.balanceOf(account); if (bal == 0) { agentCheck text "This wallet doesn't hold an Agent ID. Only Agent ID holders can mint."; return; } agentCheck text "Agent ID verified ✓ — this wallet holds an Agent ID."; const minted = await badgeRead.hasMinted(account); if (minted) { showOwned(account); } else { mintArea.style.display = "block"; }
+5. showOwned(account): find the holder's token by scanning Transfer events: const logs = await readProvider.getLogs({address: BADGE_ADDRESS, topics: [TRANSFER_TOPIC, null, ethers.utils.hexZeroPad(account, 32)], fromBlock: DEPLOY_BLOCK, toBlock: "latest"}); take the last log, tokenId = parseInt(log.topics[3], 16); then const uri = await badgeRead.tokenURI(tokenId); parse the data URI: const json = JSON.parse(atob(uri.split(",")[1])); ownedText.textContent = "You own Agent ID Badge #" + tokenId; badgeImg.src = json.image; ownedArea.style.display = "block"; mintArea.style.display = "none";
+6. mintBtn click: disable button, status "Waiting for wallet confirmation…"; const badgeSigner = new ethers.Contract(BADGE_ADDRESS, BADGE_ABI, signer); const tx = await badgeSigner.mint(); status "Mint submitted…"; txArea.innerHTML = link to EXPLORER + "/tx/" + tx.hash; await tx.wait(); status "Minted!"; refreshSupply(); showOwned(account);
+7. Error handling: in each catch, show err.message (or a short friendly version) in #status and re-enable buttons. On load, also listen to window.ethereum 'accountsChanged' to reload the page.

@@ -1,0 +1,17 @@
+Write a Foundry test file PART 1. Output ONLY Solidity code, no explanations, no markdown fences.
+
+File: test/AgentIDBadge.t.sol. It tests src/AgentIDBadge.sol (contract AgentIDBadge, constructor takes address agentIdContract; mint() free; MAX_SUPPLY = 1000; errors NotAgentIDHolder, AlreadyMinted, MaxSupplyReached, MintPaused, NonexistentToken, ZeroAddress; functions pause/unpause onlyOwner; tokenURI returns data:application/json;base64; hasMinted mapping; nextTokenId starts at 1; event BadgeMinted(address indexed to, uint256 indexed tokenId)).
+
+Also write the mock contract in the SAME file, above the test contract:
+- contract MockAgentID { mapping(address => uint256) public balances; function setBalance(address who, uint256 bal) external { balances[who] = bal; } function balanceOf(address who) external view returns (uint256) { return balances[who]; } }
+
+Test contract (use forge-std Test):
+- import "forge-std/Test.sol"; import "../src/AgentIDBadge.sol";
+- contract AgentIDBadgeTest is Test { MockAgentID mock; AgentIDBadge badge; address holder = address(0x1234); address stranger = address(0x5678); function setUp() public { mock = new MockAgentID(); badge = new AgentIDBadge(address(mock)); mock.setBalance(holder, 1); } 
+- Write these tests in part 1 (more tests come in part 2, do NOT write a closing brace for the contract yet — end the file after the last test function, leaving the contract open):
+  1. testMintByHolderOK: vm.prank(holder); badge.mint(); assertEq(badge.ownerOf(1), holder); assertTrue(badge.hasMinted(holder)); assertEq(badge.nextTokenId(), 2);
+  2. testMintByNonHolderReverts: vm.prank(stranger); vm.expectRevert(AgentIDBadge.NotAgentIDHolder.selector); badge.mint();
+  3. testDoubleMintReverts: vm.prank(holder); badge.mint(); vm.prank(holder); vm.expectRevert(AgentIDBadge.AlreadyMinted.selector); badge.mint();
+  4. testZeroAddressConstructorReverts: vm.expectRevert(AgentIDBadge.ZeroAddress.selector); new AgentIDBadge(address(0));
+  5. testPauseBlocksMint: badge.pause(); vm.prank(holder); vm.expectRevert(AgentIDBadge.MintPaused.selector); badge.mint(); badge.unpause(); vm.prank(holder); badge.mint(); assertEq(badge.ownerOf(1), holder);
+  6. testNonOwnerCannotPause: vm.prank(stranger); vm.expectRevert(); badge.pause();

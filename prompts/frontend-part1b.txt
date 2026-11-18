@@ -1,0 +1,25 @@
+Continue writing the SAME index.html file. Output ONLY the remaining code, no explanations, no markdown fences.
+
+The file so far ends mid-CSS inside the #txArea rule (the last lines are):
+        #txArea {
+            margin-top: 16px;
+            font-size: 0.85rem;
+            color: #AAAAAA;
+            word-break: break-all;
+
+Continue from exactly there and finish:
+1. Complete the #txArea rule (add a link style: #txArea a { color: #D4AF37; }) and add a footer style (.footer { margin-top: 32px; font-size: 0.8rem; color: #888888; line-height: 1.5; }).
+2. Close </style> and </head>, open <body>.
+3. The body: <div class="card"> containing:
+   - <h1>AGENT ID BADGE</h1>
+   - <p class="subtitle">A free commemorative badge for holders of an Agent ID. One per wallet. You only pay network gas.</p>
+   - <div class="status-row"><span>Minted: <span id="supply">…</span> / 1000</span><span>Network: <span id="network">…</span></span></div>
+   - <button id="connectBtn">Connect Wallet</button>
+   - <div id="status"></div>
+   - <div id="agentCheck"></div>
+   - <div id="mintArea" style="display:none"><button id="mintBtn">Mint my free badge</button></div>
+   - <div id="ownedArea" style="display:none"><p id="ownedText"></p><img id="badgeImg" alt="Your Agent ID Badge"></div>
+   - <div id="txArea"></div>
+   - <p class="footer">Built for the Agent ID Hackathon. This site collects no funds and makes no promise of value, returns, or profit. Minting is free — you only pay network gas.</p>
+4. Close </div>, then add <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+5. STOP after that script tag. Do NOT write the main application script and do NOT close </body> or </html>.

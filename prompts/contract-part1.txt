@@ -1,0 +1,20 @@
+Write PART 1 of a Solidity file. Output ONLY the Solidity code, no explanations, no markdown fences.
+
+File: AgentIDBadge.sol — a free-mint commemorative ERC-721 for holders of a Binance Agent ID.
+
+Requirements for PART 1 (stop after the pause/unpause functions; do NOT write tokenURI yet — that is part 2):
+- SPDX-License-Identifier: MIT, pragma solidity ^0.8.24
+- Imports: "@openzeppelin/contracts/token/ERC721/ERC721.sol", "@openzeppelin/contracts/access/Ownable.sol", "@openzeppelin/contracts/utils/Base64.sol", "@openzeppelin/contracts/utils/Strings.sol"
+- interface IAgentID { function balanceOf(address owner) external view returns (uint256); }
+- contract AgentIDBadge is ERC721, Ownable
+- Token name "Agent ID Badge", symbol "AIDB"
+- uint256 public constant MAX_SUPPLY = 1000;
+- address public immutable agentIdContract;
+- uint256 public nextTokenId; (starts at 1)
+- mapping(address => bool) public hasMinted;
+- bool public paused;
+- event BadgeMinted(address indexed to, uint256 indexed tokenId);
+- Custom errors: error NotAgentIDHolder(); error AlreadyMinted(); error MaxSupplyReached(); error MintPaused(); error NonexistentToken(uint256 tokenId);
+- constructor(address _agentIdContract) ERC721("Agent ID Badge", "AIDB") Ownable(msg.sender) — revert with a clear error if _agentIdContract is address(0) (use a custom error ZeroAddress() or require; pick one and keep it consistent).
+- mint() external: reverts MintPaused if paused; reverts NotAgentIDHolder if IAgentID(agentIdContract).balanceOf(msg.sender) == 0; reverts AlreadyMinted if hasMinted[msg.sender]; reverts MaxSupplyReached if nextTokenId > MAX_SUPPLY; then sets hasMinted, mints with _safeMint(msg.sender, tokenId), increments nextTokenId, emits BadgeMinted. Non-payable (free mint, gas only).
+- pause() external onlyOwner sets paused = true; unpause() external onlyOwner sets paused = false. These are the ONLY owner powers.

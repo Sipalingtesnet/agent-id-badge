@@ -1,0 +1,13 @@
+Write PART 1 of a single-file mint website (index.html). Output ONLY the HTML + CSS, no explanations, no markdown fences. End the file right after the opening <script> tag that loads ethers (leave the main script for part 2 — do NOT close </body> or </html>).
+
+Requirements:
+- Single self-contained index.html, no build step. Load ethers v5 UMD from https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js
+- Dark theme: page background #0B0B12, gold accent #D4AF37, white text, centered card layout, max-width 560px, mobile-friendly, system fonts with monospace touches.
+- Content (exact copy rules: NEVER promise value, returns, profit, or "passive income". No "Binance" brand name anywhere on the page):
+  - Header: <h1>AGENT ID BADGE</h1>, subtitle: "A free commemorative badge for holders of an Agent ID. One per wallet. You only pay network gas."
+  - Status row: "Minted: <span id=supply>…</span> / 1000" and "Network: <span id=network>…</span>"
+  - <button id=connectBtn>Connect Wallet</button> (label: "Connect Wallet")
+  - <div id=status> for messages, <div id=agentCheck> for the Agent ID check result, <div id=mintArea> hidden by default containing <button id=mintBtn>Mint my free badge</button>, <div id=ownedArea> hidden by default containing <p id=ownedText> and <img id=badgeImg> (the badge image, max-width 320px).
+  - <div id=txArea> for the transaction hash link.
+  - Footer: "Built for the Agent ID Hackathon. This site collects no funds and makes no promise of value, returns, or profit. Minting is free — you only pay network gas."
+- CSS: clean, gold border on the card, buttons gold background (#D4AF37) with dark text (#0B0B12), disabled buttons greyed out, status text small and muted (#AAAAAA), responsive padding.

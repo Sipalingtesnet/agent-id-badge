@@ -1,0 +1,12 @@
+Write PART 2 of a Foundry test file. Output ONLY the Solidity test functions, no explanations, no markdown fences, no contract wrapper, no imports — just the functions, which will be appended inside the existing contract AgentIDBadgeTest (it already has: MockAgentID mock; AgentIDBadge badge; holder = address(0x1234); stranger = address(0x5678); setUp deploys mock + badge and sets mock balance of holder to 1).
+
+Context: AgentIDBadge is ERC721 "Agent ID Badge" (AIDB), constructor takes the Agent ID contract address, mint() is free, MAX_SUPPLY = 1000, nextTokenId starts at 1, errors NotAgentIDHolder/AlreadyMinted/MaxSupplyReached/MintPaused/NonexistentToken(uint256)/ZeroAddress, tokenURI returns a data:application/json;base64 URI, event BadgeMinted(address indexed to, uint256 indexed tokenId). The contract inherits OpenZeppelin ERC721 v5 (ERC-7201 namespaced storage), so the contract's own state variables occupy sequential slots starting at 0: nextTokenId is slot 0, hasMinted is slot 1, paused is slot 2.
+
+Write these tests:
+1. testZeroAddressConstructorReverts: vm.expectRevert(AgentIDBadge.ZeroAddress.selector); new AgentIDBadge(address(0));
+2. testSupplyCapViaStorage: use vm.store(address(badge), bytes32(uint256(0)), bytes32(uint256(1000))) to set nextTokenId to 1000; then vm.prank(holder); badge.mint(); assertEq(badge.ownerOf(1000), holder); then give stranger a balance via mock.setBalance(stranger, 1); vm.prank(stranger); vm.expectRevert(AgentIDBadge.MaxSupplyReached.selector); badge.mint();
+3. testTokenURIHasDataPrefix: vm.prank(holder); badge.mint(); string memory uri = badge.tokenURI(1); assertTrue(bytes(uri).length > 100); check the URI starts with "data:application/json;base64," by comparing the first 29 bytes with bytes("data:application/json;base64,") using keccak256 on slices (write a small inline check with bytes(uri) and a loop over the first 29 bytes).
+4. testTokenURIDiffersPerToken: mock.setBalance(stranger, 1); vm.prank(holder); badge.mint(); vm.prank(stranger); badge.mint(); assertTrue(keccak256(bytes(badge.tokenURI(1))) != keccak256(bytes(badge.tokenURI(2))));
+5. testTokenURINonexistentReverts: vm.expectRevert(abi.encodeWithSelector(AgentIDBadge.NonexistentToken.selector, 999)); badge.tokenURI(999);
+6. testTransferWorks: vm.prank(holder); badge.mint(); vm.prank(holder); badge.transferFrom(holder, stranger, 1); assertEq(badge.ownerOf(1), stranger);
+7. testBadgeMintedEvent: vm.expectEmit(true, true, false, true, address(badge)); emit AgentIDBadge.BadgeMinted(holder, 1); vm.prank(holder); badge.mint();
